@@ -1,2 +1,0 @@
-# GIDA-TCO
-Simulasi TCO 
