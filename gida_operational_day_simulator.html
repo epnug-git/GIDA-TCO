@@ -100,56 +100,56 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:12p
 <aside>
   <div class="card">
     <h2 data-i18n="h_input"></h2>
-    <label data-i18n="l_model"></label>
+    <label for="model" data-i18n="l_model"></label>
     <select id="model" onchange="onModel()">
       <option>GD9-M</option><option>GDQ9-M</option><option>GD7-H</option><option>GD9-H</option><option>GD12-H</option>
     </select>
     <div class="hint" id="specInfo"></div>
-    <label data-i18n="l_lamp"></label>
+    <label for="lamp" data-i18n="l_lamp"></label>
     <input type="number" id="lamp" value="800" min="100" step="50">
-    <label data-i18n="l_weather"></label>
+    <label for="weather" data-i18n="l_weather"></label>
     <select id="weather">
       <option value="1" data-i18n="w1"></option>
       <option value="2" data-i18n="w2"></option>
       <option value="3" selected data-i18n="w3"></option>
     </select>
     <div class="row2">
-      <div><label data-i18n="l_sstart"></label><input type="number" id="sStart" value="18" min="0" max="23" step="0.5"></div>
-      <div><label data-i18n="l_sstop"></label><input type="number" id="sStop" value="6" min="0" max="24" step="0.5"></div>
+      <div><label for="sStart" data-i18n="l_sstart"></label><input type="number" id="sStart" value="18" min="0" max="23" step="0.5"></div>
+      <div><label for="sStop" data-i18n="l_sstop"></label><input type="number" id="sStop" value="6" min="0" max="24" step="0.5"></div>
     </div>
-    <label><span data-i18n="l_dod"></span> <b id="dodTxt">80</b>% (<span data-i18n="l_dod2"></span> <span id="trigTxt">20</span>%)</label>
+    <label for="dod"><span data-i18n="l_dod"></span> <b id="dodTxt">80</b>% (<span data-i18n="l_dod2"></span> <span id="trigTxt">20</span>%)</label>
     <input type="range" id="dod" min="50" max="100" step="5" value="80" oninput="updDod()">
-    <label data-i18n="l_days"></label>
+    <label for="days" data-i18n="l_days"></label>
     <select id="days"></select>
     <button id="runBtn" onclick="run()" data-i18n="btn_run" style="margin-top:14px;width:100%;padding:10px;border:0;border-radius:8px;background:var(--acc);color:#1a1200;font-weight:700;font-size:14px;cursor:pointer"></button>
   </div>
   <div class="card">
     <h2 data-i18n="h_adv"></h2>
-    <label data-i18n="l_pre"></label>
+    <label for="preHour" data-i18n="l_pre"></label>
     <input type="number" id="preHour" value="15" min="0" max="23" step="0.5">
     <div class="hint" data-i18n="h_pre"></div>
-    <label data-i18n="l_daystart"></label>
+    <label for="dayStart" data-i18n="l_daystart"></label>
     <input type="number" id="dayStart" value="6" min="0" max="12" step="1">
     <div class="hint" data-i18n="h_daystart"></div>
-    <label data-i18n="l_soc0"></label>
+    <label for="soc0" data-i18n="l_soc0"></label>
     <input type="number" id="soc0" value="100" min="0" max="100">
     <div class="row2">
-      <div><label data-i18n="l_sunrise"></label><input type="number" id="sunrise" value="6" min="0" max="12" step="0.5"></div>
-      <div><label data-i18n="l_sunset"></label><input type="number" id="sunset" value="18" min="12" max="24" step="0.5"></div>
+      <div><label for="sunrise" data-i18n="l_sunrise"></label><input type="number" id="sunrise" value="6" min="0" max="12" step="0.5"></div>
+      <div><label for="sunset" data-i18n="l_sunset"></label><input type="number" id="sunset" value="18" min="12" max="24" step="0.5"></div>
     </div>
     <div class="row2">
-      <div><label data-i18n="l_pveff"></label><input type="number" id="pvEff" value="80" min="30" max="100"></div>
-      <div><label data-i18n="l_cheff"></label><input type="number" id="chEff" value="90" min="30" max="100"></div>
+      <div><label for="pvEff" data-i18n="l_pveff"></label><input type="number" id="pvEff" value="80" min="30" max="100"></div>
+      <div><label for="chEff" data-i18n="l_cheff"></label><input type="number" id="chEff" value="90" min="30" max="100"></div>
     </div>
-    <label data-i18n="l_gmode"></label>
+    <label for="gMode" data-i18n="l_gmode"></label>
     <select id="gMode" onchange="$('gPctBox').style.display=this.value==='pct'?'block':'none'">
       <option value="full" selected data-i18n="g_full"></option>
       <option value="pct" data-i18n="g_pct"></option>
       <option value="cont" data-i18n="g_cont"></option>
     </select>
-    <div id="gPctBox" style="display:none"><label data-i18n="l_gpct"></label><input type="number" id="gPct" value="90" min="30" max="100"></div>
+    <div id="gPctBox" style="display:none"><label for="gPct" data-i18n="l_gpct"></label><input type="number" id="gPct" value="90" min="30" max="100"></div>
     <div class="hint" data-i18n="h_gmode"></div>
-    <label data-i18n="l_bal"></label>
+    <label for="bal" data-i18n="l_bal"></label>
     <select id="bal"><option value="0" data-i18n="bal_off"></option><option value="7" data-n="7" data-i18n="n_days"></option><option value="14" selected data-n="14" data-i18n="n_days"></option></select>
     <details id="perDay"><summary data-i18n="sum_perday"></summary><div id="perDayBox" class="row2" style="margin-top:8px"></div></details>
   </div>
@@ -309,11 +309,11 @@ let LAST=null;
 
 (function init(){
   const d=$('days');for(let i=1;i<=14;i++){const o=document.createElement('option');o.value=i;o.dataset.n=i;o.dataset.i18n='n_days';if(i===7)o.selected=true;d.appendChild(o)}
-  const b=$('perDayBox');for(let i=1;i<=14;i++){b.insertAdjacentHTML('beforeend',`<div><label data-i18n="l_day" data-n="${i}"></label><select class="pdw"><option value="" data-i18n="opt_default"></option><option value="1" data-i18n="ws1"></option><option value="2" data-i18n="ws2"></option><option value="3" data-i18n="ws3"></option></select></div>`)}
+  const b=$('perDayBox');for(let i=1;i<=14;i++){b.insertAdjacentHTML('beforeend',`<div><label for="pdw${i}" data-i18n="l_day" data-n="${i}"></label><select class="pdw" id="pdw${i}"><option value="" data-i18n="opt_default"></option><option value="1" data-i18n="ws1"></option><option value="2" data-i18n="ws2"></option><option value="3" data-i18n="ws3"></option></select></div>`)}
   const ls=$('lang');LANGS.forEach((c,i)=>{const o=document.createElement('option');o.value=c;o.textContent=LANG_NAMES[i];ls.appendChild(o)});
   let saved=null;try{saved=localStorage.getItem('gida_lang')}catch(e){}
   CUR=LANGS.indexOf(saved)>=0?saved:'id';ls.value=CUR;
-  onModel();updDod();applyStatic();
+  updDod();applyStatic();
 })();
 function applyStatic(){
   document.documentElement.lang=CUR;document.documentElement.dir=(CUR==='ar')?'rtl':'ltr';
@@ -321,7 +321,7 @@ function applyStatic(){
   onModel(true);
 }
 
-function doPrint(){var d=document.getElementById('pdate');if(d)d.textContent=new Date().toLocaleString()+' · '+(document.getElementById('model')||{}).value+' · '+(document.getElementById('lamp')||{value:''}).value+' W';window.print();}
+function doPrint(){run();var d=document.getElementById('pdate');if(d)d.textContent=new Date().toLocaleString()+' · '+(document.getElementById('model')||{}).value+' · '+(document.getElementById('lamp')||{value:''}).value+' W';window.print();}
 function setLang(c){CUR=c;try{localStorage.setItem('gida_lang',c)}catch(e){}applyStatic();if(LAST)render(LAST.p,LAST.r);}
 function onModel(keep){const s=SPECS[$('model').value];if(!keep)$('lamp').value=s.lamp;$('specInfo').textContent=t('spec',{pv:s.pv,bat:s.bat.toLocaleString(),ch:s.ch});}
 function updDod(){const v=+$('dod').value;$('dodTxt').textContent=v;$('trigTxt').textContent=100-v;}
@@ -342,9 +342,9 @@ function runSim(p){
   const steps=Math.round(24/DT)*totalRows;
   const spd=Math.round(24/DT);
   // PV dihitung pada jam dinding (bukan jam relatif), supaya siang tidak terpotong/terkompres bila hari operasional mulai setelah matahari terbit
-  const sr=p.sunrise;let ss=p.sunset;if(ss<=sr)ss=24;const span=Math.max(0.1,ss-sr);
+  const sr=p.sunrise,ss=p.sunset,span=Math.max(0.1,ss-sr); // terbit/terbenam tidak valid (ss<=sr) -> tanpa PV (peringatan w_sun)
   const dayGain=d=>spec.pv*PSH[p.weatherDay[d]||p.weather]*pvEff;
-  const pvW=(T)=>{if(T>=24*totalRows)return 0;const Tc=T+off,c=Math.floor(Tc/24),h=Tc-24*c;if(h<sr||h>=ss)return 0;
+  const pvW=(Th)=>{if(ss<=sr||Th>=24*totalRows)return 0;const Tc=Th+off,c=Math.floor(Tc/24),h=Tc-24*c;if(h<sr||h>=ss)return 0;
     return dayGain(c)*(Math.PI/2)/span*Math.sin(Math.PI*(h-sr)/span);};
   // shift windows
   const shifts=[];
@@ -361,44 +361,49 @@ function runSim(p){
   // mode: 0 idle,1 lamp-bat,2 lamp-gen,3 precharge
   const wastedDay=new Float64Array(totalRows);let wasted=0,pvUsed=0,total={fuel:0,genH:0,preH:0};
   let lampGapWh=0;
-  const projPV=(T0,socNow,Tend)=>{let s=socNow;for(let T=T0;T<Tend;T+=DT){s=Math.min(bat,s+pvW(T)*DT);}return s;};
+  // kelebihan di atas kapasitas: yang dihitung terbuang hanya bagian PV (energi genset dianggap masuk lebih dulu)
+  const clip=(Th,pvWh)=>{if(soc>bat){const w=Math.min(soc-bat,pvWh);wasted+=w;wastedDay[Math.min(totalRows-1,Math.floor(Th/24))]+=w;soc=bat}};
+  const projPV=(T0,socNow,Tend)=>{let s=socNow;for(let Th=T0;Th<Tend;Th+=DT){s=Math.min(bat,s+pvW(Th)*DT);}return s;};
   for(let i=0;i<steps;i++){
-    const T=i*DT;
+    const Th=i*DT;
     let sh=null,shiftActive=false;
-    for(const x of shifts){if(T>=x.st-1e-9&&T<x.en-1e-9){sh=x;shiftActive=true;break}}
-    const pv=pvW(T);let mode=0;
+    for(const x of shifts){if(Th>=x.st-1e-9&&Th<x.en-1e-9){sh=x;shiftActive=true;break}}
+    const pv=pvW(Th);let mode=0;
     if(shiftActive){
       if(sh.socStart===null)sh.socStart=soc;
-      if(!sh.latched&&soc<=trigWh+1e-6){sh.latched=true;if(sh.genStartT===null)sh.genStartT=T;sh.genStarts.push(T);}
+      if(!sh.latched&&soc<=trigWh+1e-6){sh.latched=true;if(sh.genStartT===null)sh.genStartT=Th;sh.genStarts.push(Th);}
       if(sh.latched){
-        mode=2;sh.genH+=DT;sh.fuelNight+=FUEL_LPH*DT;total.fuel+=FUEL_LPH*DT;total.genH+=DT;
+        mode=2;
         const net=ch-lamp; // efisiensi charger hanya berlaku saat mengisi; bila lampu > charger, defisit diambil penuh dari baterai
-        soc+=(net>0?net*chEff:net)*DT+pv*DT;
-        if(soc>=stopLvl-1e-6){ if(soc>stopLvl)soc=stopLvl; sh.latched=false; }
+        const g=(net>0?net*chEff:net)+pv;
+        // genset bisa berhenti di tengah langkah saat stopLvl tercapai: jam & BBM dihitung proporsional, sisa langkah lampu dari baterai
+        let f=1;if(g>0&&soc+g*DT>=stopLvl-1e-6){f=Math.max(0,Math.min(1,(stopLvl-soc)/(g*DT)));sh.latched=false;}
+        sh.genH+=f*DT;sh.fuelNight+=FUEL_LPH*f*DT;total.fuel+=FUEL_LPH*f*DT;total.genH+=f*DT;
+        soc+=g*f*DT+(pv-lamp)*(1-f)*DT;
       }else{
         mode=1;soc+=pv*DT-lamp*DT;
       }
-      if(soc>bat){wasted+=soc-bat;wastedDay[Math.min(totalRows-1,Math.floor(T/24))]+=soc-bat;soc=bat}
+      clip(Th,pv*DT);
       if(soc<0){lampGapWh+=-soc;soc=0}
       sh.socMin=Math.min(sh.socMin,soc);
     }else{
       // precharge?
       let pc=null;
-      for(const x of shifts){if(T>=x.pre-1e-9&&T<x.st-1e-9){pc=x;break}}
+      for(const x of shifts){if(Th>=x.pre-1e-9&&Th<x.st-1e-9){pc=x;break}}
       let on=false;
       if(pc&&soc<bat-1e-6){
-        const proj=projPV(T,soc,pc.st);
+        const proj=projPV(Th,soc,pc.st);
         if(proj<pc.target-1e-6)on=true;
       }
       if(on){
-        mode=3;pc.preH+=DT;if(pc.preStartT===null)pc.preStartT=T;pc.preEndT=T+DT;
+        mode=3;pc.preH+=DT;if(pc.preStartT===null)pc.preStartT=Th;pc.preEndT=Th+DT;
         pc.fuelPre+=FUEL_LPH*DT;total.fuel+=FUEL_LPH*DT;total.preH+=DT;
         soc+=ch*chEff*DT+pv*DT;
       }else soc+=pv*DT;
-      if(soc>bat){wasted+=soc-bat;wastedDay[Math.min(totalRows-1,Math.floor(T/24))]+=soc-bat;soc=bat}
+      clip(Th,pv*DT);
     }
     // sh end bookkeeping
-    for(const x of shifts){if(x.socEnd===null&&T+DT>=x.en-1e-9&&T<x.en)x.socEnd=soc;}
+    for(const x of shifts){if(x.socEnd===null&&Th+DT>=x.en-1e-9&&Th<x.en)x.socEnd=soc;}
     A.soc[i]=soc;A.mode[i]=mode;A.pv[i]=pv;
   }
   for(const x of shifts){if(x.socEnd===null)x.socEnd=soc; if(x.socMin===Infinity)x.socMin=x.socStart||0;}
@@ -407,15 +412,18 @@ function runSim(p){
 }
 
 /* ================= UI ================= */
+// baca input angka: kosong/tidak valid -> def, lalu dibatasi ke atribut min/max input; nilai yang dipakai ditulis balik ke kotak input
+function num(id,def){const el=$(id);let v=parseFloat(el.value);if(!isFinite(v))v=def;
+  if(el.min!=='')v=Math.max(+el.min,v);if(el.max!=='')v=Math.min(+el.max,v);el.value=v;return v;}
 function getParams(){
   const wd=[...document.querySelectorAll('.pdw')].map(e=>e.value?+e.value:0);
-  return {model:$('model').value,lamp:+$('lamp').value||800,weather:+$('weather').value,weatherDay:wd,
-    sStart:+$('sStart').value,sStop:+$('sStop').value,dod:+$('dod').value,days:+$('days').value,
-    off:Math.max(0,Math.min(12,+$('dayStart').value||0)),preHour:+$('preHour').value,soc0:Math.max(0,Math.min(100,+$('soc0').value)),sunrise:+$('sunrise').value,sunset:+$('sunset').value,
-    pvEff:+$('pvEff').value||80,chEff:+$('chEff').value||90,bal:+$('bal').value,gMode:$('gMode').value,gPct:+$('gPct').value||90};
+  return {model:$('model').value,lamp:num('lamp',SPECS[$('model').value].lamp),weather:+$('weather').value,weatherDay:wd,
+    sStart:num('sStart',18),sStop:num('sStop',6),dod:+$('dod').value,days:+$('days').value,
+    off:num('dayStart',6),preHour:num('preHour',15),soc0:num('soc0',100),sunrise:num('sunrise',6),sunset:num('sunset',18),
+    pvEff:num('pvEff',80),chEff:num('chEff',90),bal:+$('bal').value,gMode:$('gMode').value,gPct:num('gPct',90)};
 }
 function run(){const p=getParams();const r=runSim(p);LAST={p,r};render(p,r);}
-function segs(arr,spd,row,fn){
+function segs(spd,row,fn){
   const out=[];let cur=null;
   for(let j=0;j<spd;j++){const idx=row*spd+j;const k=fn(idx);
     if(cur&&cur.k===k)cur.e=j+1;else{if(cur)out.push(cur);cur={k,s:j,e:j+1}}}
@@ -463,7 +471,7 @@ function render(p,r){
   for(let row=0;row<totalRows;row++){
     const wk=(p.weatherDay[row]||p.weather);
     let html=`<div class="grow"><div class="dl">D${row+1}<div style="font-size:9px;color:var(--mut);font-weight:400">${t('ws'+wk)}</div></div><div class="track">`;
-    for(const s of segs(A.mode,spd,row,i=>A.mode[i])){
+    for(const s of segs(spd,row,i=>A.mode[i])){
       if(s.k===0)continue;
       const left=s.s/spd*100,w=(s.e-s.s)/spd*100;
       if(s.k===2){html+=`<div class="seg t-gen" style="left:${left}%;width:${w}%;background:var(--gen)"></div>`}
