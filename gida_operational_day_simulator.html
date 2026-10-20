@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GIDA Operational Day Simulator</title>
+<style>
+:root{--bg:#0f1720;--card:#17222e;--card2:#1d2b3a;--line:#2b3b4d;--tx:#e8eef5;--mut:#8fa3b8;--acc:#f5a623;--blue:#3b82f6;--gen:#ef4444;--pre:#f97316;--pv:#facc15;--ok:#22c55e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.45}
+header{padding:14px 16px;border-bottom:1px solid var(--line);background:#121c27}
+header h1{margin:0;font-size:18px}
+header p{margin:2px 0 0;color:var(--mut);font-size:12px}
+.wrap{display:grid;grid-template-columns:320px 1fr;gap:14px;padding:14px;max-width:1500px;margin:0 auto}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.card h2{margin:0 0 10px;font-size:14px;letter-spacing:.3px;color:var(--acc);text-transform:uppercase}
+label{display:block;font-size:12px;color:var(--mut);margin:10px 0 3px}
+input,select{width:100%;background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:6px;padding:7px 8px;font-size:14px}
+input[type=range]{padding:0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hint{font-size:11px;color:var(--mut);margin-top:3px}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--mut);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kpi{background:var(--card2);border-radius:8px;padding:10px}
+.kpi b{display:block;font-size:20px}
+.kpi span{font-size:11px;color:var(--mut)}
+.warn{background:#3a2a10;border:1px solid #7a5513;color:#ffd48a;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:13px}
+.ok{background:#12301f;border-color:#1d6b3a;color:#9be8b5}
+/* gantt */
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--mut);margin-bottom:8px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-2px}
+.axis,.grow{display:grid;grid-template-columns:44px 1fr;align-items:center}
+.axis .ticks{position:relative;height:16px;font-size:10px;color:var(--mut)}
+.axis .ticks span{position:absolute;transform:translateX(-50%)}
+.grow{margin:5px 0}
+.grow .dl{font-size:12px;font-weight:600}
+.track{position:relative;height:38px;background:repeating-linear-gradient(90deg,#1a2735 0,#1a2735 calc(100%/24 - 1px),#223244 calc(100%/24 - 1px),#223244 calc(100%/24));border-radius:5px;overflow:hidden}
+.seg{position:absolute;border-radius:2px;color:#fff;font-size:10px;line-height:11px;overflow:hidden;white-space:nowrap;padding-left:2px}
+.t-lamp{top:2px;height:13px}.t-gen{top:17px;height:9px}.t-pv{top:28px;height:8px}
+.mark{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed #fff8;}
+.mk{position:absolute;top:-1px;font-size:10px;font-weight:700;color:#fff;background:#b91c1c;border-radius:3px;padding:0 3px;transform:translateX(2px);z-index:3}
+.mk.pre{background:#c2570c}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mut);font-weight:600}
+.tscroll{overflow-x:auto}
+.strip{display:grid;grid-template-columns:44px repeat(24,1fr);gap:1px;margin:2px 0}
+.strip .c{height:24px;font-size:9px;display:flex;align-items:center;justify-content:center;color:#0008;font-weight:700;border-radius:2px}
+.strip .dl{font-size:12px;font-weight:600;color:var(--tx);display:flex;align-items:center}
+.strip.hdr .c{height:14px;color:var(--mut);font-weight:400;background:none}
+svg text{fill:var(--mut);font-size:10px}
+.note{font-size:11px;color:var(--mut);margin-top:8px}
+
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.langbox{display:flex;align-items:center;gap:6px}
+.langbox label{margin:0;white-space:nowrap}
+.langbox select{width:auto;min-width:150px}
+#gantt,.axis,#stripHdr,#strips,#curve{direction:ltr}
+.seg,.dl,.mk{unicode-bidi:plaintext}
+[dir=rtl] .hint,[dir=rtl] label,[dir=rtl] .note{text-align:right}
+
+.btnprint{background:var(--acc);color:#111;border:0;border-radius:6px;padding:7px 14px;font-weight:700;cursor:pointer;margin-left:10px}
+.btnprint:hover{filter:brightness(1.1)}
+.hdr-r{display:flex;align-items:center;gap:6px}
+.pdate{display:none}
+@page{size:A4 landscape;margin:10mm}
+@media print{
+ :root{--bg:#fff;--card:#fff;--card2:#f3f5f8;--line:#cbd5e1;--tx:#111827;--mut:#4b5563}
+ *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:none!important}
+ body{background:#fff;color:#111827;font-size:11px}
+ header{background:#fff;border-bottom:2px solid #111827;padding:6px 0}
+ header h1{color:#111827}
+ .langbox,.btnprint{display:none!important}
+ .pdate{display:block;font-size:11px;color:#4b5563}
+ .wrap{display:grid!important;grid-template-columns:230px 1fr!important;gap:8px!important;padding:0!important}
+ input[type=range]{display:none}
+ button:not(.btnprint){display:none!important}
+ aside{width:auto!important;position:static!important;max-height:none!important;overflow:visible!important;font-size:9px}
+ aside .card{padding:6px!important}
+ aside label{font-size:9px!important}
+ .card{break-inside:avoid;page-break-inside:avoid;border:1px solid #cbd5e1;background:#fff;margin-bottom:8px}
+ input,select{border:1px solid #cbd5e1!important;background:#fff!important;color:#111827!important}
+ select{appearance:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>GIDA Operational Day Simulator</h1>
+    <p data-i18n="sub"></p>
+    <div class="pdate" id="pdate"></div>
+  </div>
+  <div class="hdr-r"><div class="langbox"><label for="lang" data-i18n="l_lang"></label><select id="lang" onchange="setLang(this.value)"></select></div><button type="button" class="btnprint" id="btnPrint" data-i18n="b_print" onclick="doPrint()"></button></div>
+</header>
+<div class="wrap">
+<aside>
+  <div class="card">
+    <h2 data-i18n="h_input"></h2>
+    <label data-i18n="l_model"></label>
+    <select id="model" onchange="onModel()">
+      <option>GD9-M</option><option>GDQ9-M</option><option>GD7-H</option><option>GD9-H</option><option>GD12-H</option>
+    </select>
+    <div class="hint" id="specInfo"></div>
+    <label data-i18n="l_lamp"></label>
+    <input type="number" id="lamp" value="800" min="100" step="50">
+    <label data-i18n="l_weather"></label>
+    <select id="weather">
+      <option value="1" data-i18n="w1"></option>
+      <option value="2" data-i18n="w2"></option>
+      <option value="3" selected data-i18n="w3"></option>
+    </select>
+    <div class="row2">
+      <div><label data-i18n="l_sstart"></label><input type="number" id="sStart" value="18" min="0" max="23" step="0.5"></div>
+      <div><label data-i18n="l_sstop"></label><input type="number" id="sStop" value="6" min="0" max="24" step="0.5"></div>
+    </div>
+    <label><span data-i18n="l_dod"></span> <b id="dodTxt">80</b>% (<span data-i18n="l_dod2"></span> <span id="trigTxt">20</span>%)</label>
+    <input type="range" id="dod" min="50" max="100" step="5" value="80" oninput="updDod()">
+    <label data-i18n="l_days"></label>
+    <select id="days"></select>
+    <button id="runBtn" onclick="run()" data-i18n="btn_run" style="margin-top:14px;width:100%;padding:10px;border:0;border-radius:8px;background:var(--acc);color:#1a1200;font-weight:700;font-size:14px;cursor:pointer"></button>
+  </div>
+  <div class="card">
+    <h2 data-i18n="h_adv"></h2>
+    <label data-i18n="l_pre"></label>
+    <input type="number" id="preHour" value="15" min="0" max="23" step="0.5">
+    <div class="hint" data-i18n="h_pre"></div>
+    <label data-i18n="l_daystart"></label>
+    <input type="number" id="dayStart" value="6" min="0" max="12" step="1">
+    <div class="hint" data-i18n="h_daystart"></div>
+    <label data-i18n="l_soc0"></label>
+    <input type="number" id="soc0" value="100" min="0" max="100">
+    <div class="row2">
+      <div><label data-i18n="l_sunrise"></label><input type="number" id="sunrise" value="6" min="0" max="12" step="0.5"></div>
+      <div><label data-i18n="l_sunset"></label><input type="number" id="sunset" value="18" min="12" max="24" step="0.5"></div>
+    </div>
+    <div class="row2">
+      <div><label data-i18n="l_pveff"></label><input type="number" id="pvEff" value="80" min="30" max="100"></div>
+      <div><label data-i18n="l_cheff"></label><input type="number" id="chEff" value="90" min="30" max="100"></div>
+    </div>
+    <label data-i18n="l_gmode"></label>
+    <select id="gMode" onchange="$('gPctBox').style.display=this.value==='pct'?'block':'none'">
+      <option value="full" selected data-i18n="g_full"></option>
+      <option value="pct" data-i18n="g_pct"></option>
+      <option value="cont" data-i18n="g_cont"></option>
+    </select>
+    <div id="gPctBox" style="display:none"><label data-i18n="l_gpct"></label><input type="number" id="gPct" value="90" min="30" max="100"></div>
+    <div class="hint" data-i18n="h_gmode"></div>
+    <label data-i18n="l_bal"></label>
+    <select id="bal"><option value="0" data-i18n="bal_off"></option><option value="7" data-n="7" data-i18n="n_days"></option><option value="14" selected data-n="14" data-i18n="n_days"></option></select>
+    <details id="perDay"><summary data-i18n="sum_perday"></summary><div id="perDayBox" class="row2" style="margin-top:8px"></div></details>
+  </div>
+</aside>
+
+<main>
+  <div id="warns"></div>
+  <div class="card"><h2 data-i18n="h_summary"></h2><div class="kpis" id="kpis"></div></div>
+
+  <div class="card">
+    <h2><span data-i18n="h_tl"></span> (<span id="rngTxt">06:00 → 06:00</span>)</h2>
+    <div class="legend">
+      <span><i style="background:var(--blue)"></i><span data-i18n="lg_bat"></span></span>
+      <span><i style="background:var(--gen)"></i><span data-i18n="lg_gen"></span></span>
+      <span><i style="background:var(--pre)"></i><span data-i18n="lg_pre"></span></span>
+      <span><i style="background:var(--pv)"></i><span data-i18n="lg_pv"></span></span>
+    </div>
+    <div class="axis"><div></div><div class="ticks" id="ticks"></div></div>
+    <div id="gantt"></div>
+    <div class="note" data-i18n="tl_note"></div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="h_soc"></h2>
+    <div class="legend">
+      <span><i style="background:#ef4444"></i><span data-i18n="lg_s1"></span></span>
+      <span><i style="background:#f59e0b"></i><span data-i18n="lg_s2"></span></span>
+      <span><i style="background:#22c55e"></i><span data-i18n="lg_s3"></span></span>
+      <span><i style="background:#16a34a"></i><span data-i18n="lg_s4"></span></span>
+    </div>
+    <div class="strip hdr" id="stripHdr"></div>
+    <div id="strips"></div>
+    <div id="curve" style="margin-top:14px"></div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="h_tbl"></h2>
+    <div class="tscroll"><table id="tbl"></table></div>
+    <div class="note" data-i18n="foot"></div>
+  </div>
+</main>
+</div>
+
+<script>
+const LANGS=['id','en','zh','es','hi','ar','fr','pt','ru','ja'];
+const LANG_NAMES=['Bahasa Indonesia','English','中文','Español','हिन्दी','العربية','Français','Português','Русский','日本語'];
+const T={
+sub:["Simulasi operasional per jam (resolusi 5 menit), 1–14 hari. Logika sama dengan simulator harian: PV dulu, genset hanya untuk sisa kebutuhan.","Hourly operational simulation (5-minute resolution), 1–14 days. Same logic as the daily simulator: PV first, genset only for the remaining need.","按小时的运行模拟（5分钟分辨率），1–14天。逻辑与日模拟器相同：优先使用光伏，发电机仅补足剩余需求。","Simulación operativa por hora (resolución de 5 minutos), 1–14 días. Misma lógica que el simulador diario: primero FV, el generador solo cubre lo restante.","प्रति घंटा संचालन सिमुलेशन (5 मिनट रिज़ॉल्यूशन), 1–14 दिन। लॉजिक दैनिक सिमुलेटर जैसा ही है: पहले PV, जनरेटर केवल शेष ज़रूरत के लिए।","محاكاة تشغيلية بالساعة (دقة 5 دقائق) من 1 إلى 14 يومًا. المنطق نفسه كالمحاكي اليومي: الطاقة الشمسية أولًا، والمولّد للاحتياج المتبقي فقط.","Simulation opérationnelle horaire (résolution 5 min), 1 à 14 jours. Même logique que le simulateur journalier : le PV d'abord, le groupe électrogène uniquement pour le besoin restant.","Simulação operacional por hora (resolução de 5 minutos), 1 a 14 dias. Mesma lógica do simulador diário: FV primeiro, o gerador só cobre o restante.","Почасовая операционная симуляция (шаг 5 минут), 1–14 дней. Та же логика, что в суточном симуляторе: сначала ФЭ, генератор — только на остаток.","1時間単位の運用シミュレーション（5分刻み）、1〜14日。日次シミュレーターと同じロジック：まず太陽光、発電機は不足分のみ。"],
+b_print:["🖨 Print / Simpan PDF","🖨 Print / Save PDF","🖨 打印 / 保存为PDF","🖨 Imprimir / Guardar PDF","🖨 प्रिंट / PDF सहेजें","🖨 طباعة / حفظ PDF","🖨 Imprimer / Enregistrer en PDF","🖨 Imprimir / Salvar PDF","🖨 Печать / Сохранить в PDF","🖨 印刷 / PDFで保存"],
+l_lang:["Bahasa","Language","语言","Idioma","भाषा","اللغة","Langue","Idioma","Язык","言語"],
+h_input:["Input Operasional","Operational Inputs","运行参数","Parámetros operativos","संचालन इनपुट","مدخلات التشغيل","Paramètres d'exploitation","Entradas operacionais","Параметры работы","運用入力"],
+l_model:["Tipe GIDA","GIDA model","GIDA 型号","Modelo GIDA","GIDA मॉडल","طراز GIDA","Modèle GIDA","Modelo GIDA","Модель GIDA","GIDA機種"],
+l_lamp:["Total watt lampu (W)","Total lamp load (W)","灯具总功率 (W)","Potencia total de lámparas (W)","कुल लैम्प वॉट (W)","إجمالي قدرة المصابيح (واط)","Puissance totale des lampes (W)","Potência total das lâmpadas (W)","Общая мощность ламп (Вт)","ランプ合計電力 (W)"],
+l_weather:["Kondisi cuaca (default semua hari)","Weather (default for all days)","天气（所有天默认）","Clima (predeterminado para todos los días)","मौसम (सभी दिनों के लिए डिफ़ॉल्ट)","الطقس (الافتراضي لكل الأيام)","Météo (par défaut pour tous les jours)","Clima (padrão para todos os dias)","Погода (по умолчанию для всех дней)","天候（全日のデフォルト）"],
+w1:["Mendung / hujan (PSH 1.5)","Overcast / rainy (PSH 1.5)","阴天/下雨 (PSH 1.5)","Nublado / lluvioso (PSH 1.5)","बादल / बारिश (PSH 1.5)","غائم / ماطر (PSH 1.5)","Couvert / pluvieux (PSH 1.5)","Nublado / chuvoso (PSH 1.5)","Пасмурно / дождь (PSH 1.5)","曇り/雨 (PSH 1.5)"],
+w2:["Berawan sebagian (PSH 3.0)","Partly cloudy (PSH 3.0)","多云 (PSH 3.0)","Parcialmente nublado (PSH 3.0)","आंशिक बादल (PSH 3.0)","غائم جزئيًا (PSH 3.0)","Partiellement nuageux (PSH 3.0)","Parcialmente nublado (PSH 3.0)","Переменная облачность (PSH 3.0)","晴れ時々曇り (PSH 3.0)"],
+w3:["Cerah (PSH 4.5)","Sunny (PSH 4.5)","晴天 (PSH 4.5)","Soleado (PSH 4.5)","धूप (PSH 4.5)","مشمس (PSH 4.5)","Ensoleillé (PSH 4.5)","Ensolarado (PSH 4.5)","Солнечно (PSH 4.5)","晴れ (PSH 4.5)"],
+ws1:["Mendung","Overcast","阴","Nublado","बादल","غائم","Couvert","Nublado","Пасмурно","曇り"],
+ws2:["Berawan","Partly cloudy","多云","Parcial","आंशिक बादल","غائم جزئيًا","Nuageux","Parcial","Облачно","晴れ曇り"],
+ws3:["Cerah","Sunny","晴","Soleado","धूप","مشمس","Ensoleillé","Ensolarado","Солнечно","晴れ"],
+l_sstart:["Shift malam mulai (jam)","Night shift start (hour)","夜班开始（时）","Inicio del turno nocturno (hora)","रात की शिफ्ट शुरू (घंटा)","بدء الوردية الليلية (الساعة)","Début du poste de nuit (heure)","Início do turno noturno (hora)","Начало ночной смены (час)","夜間シフト開始（時）"],
+l_sstop:["Shift malam selesai (jam)","Night shift end (hour)","夜班结束（时）","Fin del turno nocturno (hora)","रात की शिफ्ट समाप्त (घंटा)","نهاية الوردية الليلية (الساعة)","Fin du poste de nuit (heure)","Fim do turno noturno (hora)","Конец ночной смены (час)","夜間シフト終了（時）"],
+l_dod:["DOD level:","DOD level:","DOD 水平：","Nivel DOD:","DOD स्तर:","مستوى DOD:","Niveau DOD :","Nível DOD:","Уровень DOD:","DODレベル:"],
+l_dod2:["genset auto-start saat SOC ≤","genset auto-starts when SOC ≤","发电机在 SOC ≤ 时自动启动","el generador arranca cuando SOC ≤","SOC ≤ होने पर जनरेटर ऑटो-स्टार्ट","يبدأ المولّد تلقائيًا عند SOC ≤","le groupe démarre automatiquement quand SOC ≤","o gerador liga automaticamente quando SOC ≤","генератор автозапуск при SOC ≤","SOC ≤ で発電機が自動始動"],
+l_days:["Jumlah hari simulasi","Days to simulate","模拟天数","Días a simular","सिमुलेशन के दिन","عدد أيام المحاكاة","Jours à simuler","Dias a simular","Дней симуляции","シミュレーション日数"],
+n_days:["{n} hari","{n} days","{n} 天","{n} días","{n} दिन","{n} أيام","{n} jours","{n} dias","{n} дн.","{n}日"],
+btn_run:["Jalankan Simulasi","Run Simulation","运行模拟","Ejecutar simulación","सिमुलेशन चलाएँ","تشغيل المحاكاة","Lancer la simulation","Executar simulação","Запустить симуляцию","シミュレーション実行"],
+h_adv:["Pengaturan Lanjutan","Advanced Settings","高级设置","Ajustes avanzados","उन्नत सेटिंग्स","إعدادات متقدمة","Paramètres avancés","Configurações avançadas","Расширенные настройки","詳細設定"],
+l_pre:["Genset precharge siang mulai jam","Daytime genset precharge starts at (hour)","白天发电机预充电开始时间（时）","El generador precarga de día desde (hora)","दिन में जनरेटर प्रीचार्ज शुरू (घंटा)","بدء الشحن المسبق بالمولّد نهارًا (الساعة)","Précharge diurne par groupe dès (heure)","Pré-carga diurna do gerador a partir de (hora)","Дневной предзаряд генератором с (час)","日中の発電機プリチャージ開始（時）"],
+h_pre:["Sebelum jam ini baterai hanya diisi PV. Genset baru menyala jika proyeksi PV saja tidak cukup untuk shift malam.","Before this hour the battery is charged by PV only. The genset starts only if PV alone is projected to be insufficient for the night shift.","此时间之前仅由光伏给电池充电。仅当预测光伏不足以支撑夜班时，发电机才会启动。","Antes de esta hora la batería solo se carga con FV. El generador arranca solo si la FV por sí sola no alcanzará para el turno nocturno.","इस समय से पहले बैटरी केवल PV से चार्ज होती है। जनरेटर तभी चालू होता है जब रात की शिफ्ट के लिए केवल PV पर्याप्त न हो।","قبل هذه الساعة تُشحن البطارية بالطاقة الشمسية فقط. يعمل المولّد فقط إذا كانت الطاقة الشمسية وحدها غير كافية للوردية الليلية.","Avant cette heure, la batterie n'est chargée que par le PV. Le groupe ne démarre que si le PV seul est insuffisant pour le poste de nuit.","Antes desta hora a bateria é carregada só por FV. O gerador só liga se o FV sozinho não bastar para o turno noturno.","До этого часа батарея заряжается только от ФЭ. Генератор включается, только если ФЭ одной не хватит на ночную смену.","この時刻までは太陽光のみで充電します。夜間シフトに太陽光だけでは足りない見込みの場合のみ発電機が始動します。"],
+l_daystart:["Hari operasional mulai jam (tampilan 06→06)","Operating day starts at (hour) (view 06→06)","运营日开始时间（时）（显示 06→06）","El día operativo empieza a las (hora) (vista 06→06)","संचालन दिवस शुरू (घंटा) (दृश्य 06→06)","بداية اليوم التشغيلي (الساعة) (عرض 06→06)","Début du jour d'exploitation (heure) (vue 06→06)","Dia operacional começa às (hora) (vista 06→06)","Начало рабочих суток (час) (вид 06→06)","運用日の開始（時）（表示 06→06）"],
+h_daystart:["Setiap baris/hari dihitung dari jam ini sampai jam yang sama keesokan harinya, supaya shift malam tidak terpotong tengah malam. Matahari terbit sebaiknya jatuh setelah jam ini.","Each row/day runs from this hour to the same hour the next day, so the night shift is not cut at midnight. Sunrise should fall after this hour.","每一行/每一天从该时间到次日同一时间，这样夜班不会在午夜被截断。日出应在该时间之后。","Cada fila/día va desde esta hora hasta la misma hora del día siguiente, para que el turno nocturno no se corte a medianoche. El amanecer debe ocurrir después de esta hora.","प्रत्येक पंक्ति/दिन इस घंटे से अगले दिन उसी घंटे तक चलता है, ताकि रात की शिफ्ट आधी रात पर न कटे। सूर्योदय इस घंटे के बाद होना चाहिए।","يمتد كل صف/يوم من هذه الساعة إلى الساعة نفسها في اليوم التالي حتى لا تُقطع الوردية الليلية عند منتصف الليل. يجب أن يكون الشروق بعد هذه الساعة.","Chaque ligne/jour va de cette heure à la même heure le lendemain, pour ne pas couper le poste de nuit à minuit. Le lever du soleil doit tomber après cette heure.","Cada linha/dia vai desta hora até a mesma hora do dia seguinte, para o turno noturno não ser cortado à meia-noite. O nascer do sol deve ocorrer depois desta hora.","Каждая строка/сутки идут от этого часа до того же часа следующего дня, чтобы ночная смена не обрывалась в полночь. Восход должен быть после этого часа.","各行（日）はこの時刻から翌日の同時刻までで、夜間シフトが深夜で途切れません。日の出はこの時刻より後にしてください。"],
+l_soc0:["SOC awal (% kapasitas) saat awal hari operasional ke-1","Initial SOC (% of capacity) at the start of operating day 1","第1个运营日开始时的初始 SOC（容量%）","SOC inicial (% de capacidad) al inicio del día operativo 1","पहले संचालन दिवस की शुरुआत में प्रारंभिक SOC (क्षमता का %)","SOC الابتدائي (% من السعة) في بداية اليوم التشغيلي 1","SOC initial (% de la capacité) au début du jour d'exploitation 1","SOC inicial (% da capacidade) no início do dia operacional 1","Начальный SOC (% ёмкости) в начале 1-х рабочих суток","運用日1開始時の初期SOC（容量%）"],
+l_sunrise:["Matahari terbit (jam)","Sunrise (hour)","日出（时）","Amanecer (hora)","सूर्योदय (घंटा)","الشروق (الساعة)","Lever du soleil (heure)","Nascer do sol (hora)","Восход (час)","日の出（時）"],
+l_sunset:["Matahari terbenam (jam)","Sunset (hour)","日落（时）","Atardecer (hora)","सूर्यास्त (घंटा)","الغروب (الساعة)","Coucher du soleil (heure)","Pôr do sol (hora)","Закат (час)","日没（時）"],
+l_pveff:["Efisiensi PV→baterai (%)","PV→battery efficiency (%)","光伏→电池效率 (%)","Eficiencia FV→batería (%)","PV→बैटरी दक्षता (%)","كفاءة PV→البطارية (%)","Rendement PV→batterie (%)","Eficiência FV→bateria (%)","КПД ФЭ→батарея (%)","PV→バッテリー効率 (%)"],
+l_cheff:["Efisiensi charger genset (%)","Genset charger efficiency (%)","发电机充电器效率 (%)","Eficiencia del cargador del generador (%)","जनरेटर चार्जर दक्षता (%)","كفاءة شاحن المولّد (%)","Rendement du chargeur du groupe (%)","Eficiência do carregador do gerador (%)","КПД зарядного устройства генератора (%)","発電機チャージャー効率 (%)"],
+l_gmode:["Perilaku genset malam (setelah auto-start)","Night genset behaviour (after auto-start)","夜间发电机运行方式（自动启动后）","Comportamiento nocturno del generador (tras el arranque automático)","रात में जनरेटर व्यवहार (ऑटो-स्टार्ट के बाद)","سلوك المولّد ليلًا (بعد التشغيل التلقائي)","Comportement nocturne du groupe (après démarrage auto)","Comportamento noturno do gerador (após partida automática)","Работа генератора ночью (после автозапуска)","夜間の発電機動作（自動始動後）"],
+g_full:["Mati saat baterai 100%, hidup lagi di batas DOD","Stop at 100% battery, restart at DOD limit","电池100%时停机，到DOD下限再启动","Se detiene al 100 % de batería, rearranca en el límite DOD","बैटरी 100% पर बंद, DOD सीमा पर फिर चालू","يتوقف عند 100% ويعيد التشغيل عند حد DOD","S'arrête à 100 % de batterie, redémarre à la limite DOD","Para em 100 % de bateria, religa no limite DOD","Остановка при 100 %, повторный пуск на пороге DOD","バッテリー100%で停止、DOD下限で再始動"],
+g_pct:["Mati di SOC tertentu (%), hidup lagi di batas DOD","Stop at a chosen SOC (%), restart at DOD limit","在设定 SOC (%) 停机，到DOD下限再启动","Se detiene en un SOC elegido (%), rearranca en el límite DOD","चुने गए SOC (%) पर बंद, DOD सीमा पर फिर चालू","يتوقف عند SOC محدد (%) ويعيد التشغيل عند حد DOD","S'arrête à un SOC choisi (%), redémarre à la limite DOD","Para em um SOC escolhido (%), religa no limite DOD","Остановка при заданном SOC (%), пуск на пороге DOD","指定SOC(%)で停止、DOD下限で再始動"],
+g_cont:["Jalan terus sampai shift selesai","Run until the shift ends","持续运行到班次结束","Funciona hasta el fin del turno","शिफ्ट खत्म होने तक चलता रहे","يعمل حتى نهاية الوردية","Fonctionne jusqu'à la fin du poste","Funciona até o fim do turno","Работает до конца смены","シフト終了まで運転"],
+l_gpct:["Genset mati di SOC (%)","Genset stops at SOC (%)","发电机停机 SOC (%)","El generador se detiene en SOC (%)","जनरेटर SOC (%) पर बंद","يتوقف المولّد عند SOC (%)","Le groupe s'arrête à SOC (%)","O gerador para em SOC (%)","Генератор останавливается при SOC (%)","発電機停止SOC (%)"],
+h_gmode:["Saat genset hidup, lampu disuplai langsung oleh genset dan sisa daya charger mengisi baterai. Saat genset mati, lampu kembali dari baterai.","While the genset runs, it supplies the lamp directly and the charger's remaining power charges the battery. When it stops, the lamp runs from the battery again.","发电机运行时直接给灯具供电，充电器剩余功率给电池充电。停机后灯具改由电池供电。","Mientras el generador funciona, alimenta la lámpara directamente y la potencia restante del cargador carga la batería. Al detenerse, la lámpara vuelve a funcionar con la batería.","जनरेटर चलने पर लैम्प को सीधे बिजली देता है और चार्जर की शेष शक्ति बैटरी चार्ज करती है। बंद होने पर लैम्प फिर बैटरी से चलता है।","أثناء عمل المولّد يغذّي المصباح مباشرة وتشحن القدرة المتبقية من الشاحن البطارية. عند توقفه يعود المصباح للعمل من البطارية.","Pendant son fonctionnement, le groupe alimente directement la lampe et la puissance restante du chargeur charge la batterie. À l'arrêt, la lampe repasse sur la batterie.","Enquanto funciona, o gerador alimenta a lâmpada diretamente e a potência restante do carregador carrega a bateria. Ao parar, a lâmpada volta a usar a bateria.","Пока генератор работает, он питает лампу напрямую, а остаток мощности зарядного устройства заряжает батарею. После остановки лампа снова питается от батареи.","発電機の運転中はランプへ直接給電し、チャージャーの余剰電力でバッテリーを充電します。停止後はランプが再びバッテリーから給電されます。"],
+l_bal:["Balancing (isi penuh 100%) tiap N hari, 0 = off","Balancing (full 100% charge) every N days, 0 = off","每 N 天均衡（充满100%），0 = 关闭","Balanceo (carga completa 100 %) cada N días, 0 = desactivado","हर N दिन पर बैलेंसिंग (100% फुल चार्ज), 0 = बंद","موازنة (شحن كامل 100%) كل N أيام، 0 = إيقاف","Équilibrage (charge complète 100 %) tous les N jours, 0 = désactivé","Balanceamento (carga total 100 %) a cada N dias, 0 = desligado","Балансировка (полный заряд 100 %) каждые N дней, 0 = выкл.","バランシング（100%満充電）をN日ごと、0 = オフ"],
+bal_off:["Off","Off","关闭","Desactivado","बंद","إيقاف","Désactivé","Desligado","Выкл.","オフ"],
+sum_perday:["Cuaca per hari (opsional)","Weather per day (optional)","每日天气（可选）","Clima por día (opcional)","प्रतिदिन मौसम (वैकल्पिक)","الطقس لكل يوم (اختياري)","Météo par jour (facultatif)","Clima por dia (opcional)","Погода по дням (необязательно)","日ごとの天候（任意）"],
+l_day:["Hari {n}","Day {n}","第 {n} 天","Día {n}","दिन {n}","اليوم {n}","Jour {n}","Dia {n}","День {n}","{n}日目"],
+opt_default:["default","default","默认","predeterminado","डिफ़ॉल्ट","افتراضي","par défaut","padrão","по умолч.","デフォルト"],
+h_summary:["Ringkasan","Summary","摘要","Resumen","सारांश","الملخص","Résumé","Resumo","Сводка","サマリー"],
+h_tl:["1. Timeline Operasi per Hari Operasional","1. Operating Timeline per Operating Day","1. 每个运营日的运行时间线","1. Línea de tiempo por día operativo","1. प्रति संचालन दिवस समयरेखा","1. الجدول الزمني لكل يوم تشغيلي","1. Chronologie par jour d'exploitation","1. Linha do tempo por dia operacional","1. Временная шкала по рабочим суткам","1. 運用日ごとのタイムライン"],
+lg_bat:["Lampu dari baterai","Lamp from battery","灯具由电池供电","Lámpara desde la batería","लैम्प बैटरी से","المصباح من البطارية","Lampe sur batterie","Lâmpada pela bateria","Лампа от батареи","ランプ：バッテリー給電"],
+lg_gen:["Lampu dari genset (auto-start)","Lamp from genset (auto-start)","灯具由发电机供电（自动启动）","Lámpara desde el generador (arranque auto)","लैम्प जनरेटर से (ऑटो-स्टार्ट)","المصباح من المولّد (تشغيل تلقائي)","Lampe sur groupe (démarrage auto)","Lâmpada pelo gerador (partida auto)","Лампа от генератора (автозапуск)","ランプ：発電機給電（自動始動）"],
+lg_pre:["Genset precharge siang","Daytime genset precharge","白天发电机预充电","Precarga diurna del generador","दिन में जनरेटर प्रीचार्ज","شحن مسبق نهاري بالمولّد","Précharge diurne par groupe","Pré-carga diurna do gerador","Дневной предзаряд генератором","日中の発電機プリチャージ"],
+lg_pv:["PV charging (makin pekat = makin kuat)","PV charging (darker = stronger)","光伏充电（颜色越深越强）","Carga FV (más intenso = más fuerte)","PV चार्जिंग (गहरा = अधिक)","شحن PV (الأغمق = الأقوى)","Charge PV (plus foncé = plus fort)","Carga FV (mais intenso = mais forte)","Заряд от ФЭ (темнее = сильнее)","PV充電（濃いほど強い）"],
+tl_note:["Satu baris = satu hari operasional (dari jam mulai hari sampai jam yang sama keesokan harinya), sehingga shift malam utuh dalam satu baris. Jam di atas adalah jam dinding.","One row = one operating day (from the day-start hour to the same hour the next day), so the night shift stays whole in one row. Hours shown are clock hours.","一行 = 一个运营日（从起始时间到次日同一时间），因此夜班完整显示在同一行。上方为时钟时间。","Una fila = un día operativo (desde la hora de inicio hasta la misma hora del día siguiente), así el turno nocturno queda completo en una fila. Las horas son de reloj.","एक पंक्ति = एक संचालन दिवस (शुरुआती घंटे से अगले दिन उसी घंटे तक), इसलिए रात की शिफ्ट एक ही पंक्ति में पूरी दिखती है। ऊपर के घंटे घड़ी के समय हैं।","الصف الواحد = يوم تشغيلي واحد (من ساعة بداية اليوم إلى الساعة نفسها في اليوم التالي)، فتظهر الوردية الليلية كاملة في صف واحد. الساعات المعروضة هي توقيت الساعة.","Une ligne = un jour d'exploitation (de l'heure de début à la même heure le lendemain), le poste de nuit reste donc entier sur une ligne. Les heures sont des heures d'horloge.","Uma linha = um dia operacional (da hora de início até a mesma hora do dia seguinte), então o turno noturno fica inteiro em uma linha. As horas são de relógio.","Одна строка = одни рабочие сутки (от часа начала до того же часа следующего дня), поэтому ночная смена целиком в одной строке. Часы — по настенным часам.","1行 = 1運用日（開始時刻から翌日の同時刻まで）なので、夜間シフトが1行に収まります。表示は時計時刻です。"],
+h_soc:["2. Status Baterai (rata-rata SOC per jam)","2. Battery Status (average SOC per hour)","2. 电池状态（每小时平均 SOC）","2. Estado de la batería (SOC medio por hora)","2. बैटरी स्थिति (प्रति घंटा औसत SOC)","2. حالة البطارية (متوسط SOC في الساعة)","2. État de la batterie (SOC moyen par heure)","2. Estado da bateria (SOC médio por hora)","2. Состояние батареи (средний SOC по часам)","2. バッテリー状態（時間平均SOC）"],
+lg_s1:["≤ batas DOD","≤ DOD limit","≤ DOD 下限","≤ límite DOD","≤ DOD सीमा","≤ حد DOD","≤ limite DOD","≤ limite DOD","≤ порог DOD","≤ DOD下限"],
+lg_s2:["rendah","low","偏低","bajo","कम","منخفض","bas","baixo","низкий","低め"],
+lg_s3:["sehat","healthy","良好","saludable","स्वस्थ","جيد","sain","saudável","норма","良好"],
+lg_s4:["penuh","full","充满","lleno","पूर्ण","ممتلئ","plein","cheio","полный","満充電"],
+curve_lg:["Kurva SOC kontinu (garis merah putus = batas DOD)","Continuous SOC curve (red dashed line = DOD limit)","连续 SOC 曲线（红色虚线 = DOD 下限）","Curva SOC continua (línea roja discontinua = límite DOD)","निरंतर SOC वक्र (लाल बिंदीदार रेखा = DOD सीमा)","منحنى SOC المتصل (الخط الأحمر المتقطع = حد DOD)","Courbe SOC continue (ligne rouge pointillée = limite DOD)","Curva SOC contínua (linha vermelha tracejada = limite DOD)","Непрерывная кривая SOC (красный пунктир = порог DOD)","SOC連続曲線（赤い破線 = DOD下限）"],
+h_tbl:["3. Rincian per Shift","3. Per-Shift Details","3. 各班次明细","3. Detalle por turno","3. प्रति शिफ्ट विवरण","3. تفاصيل كل وردية","3. Détail par poste","3. Detalhes por turno","3. Детали по сменам","3. シフト別詳細"],
+foot:["Simulasi memakai kapasitas nominal (degradasi 14 hari diabaikan). Perilaku genset malam dipilih di Pengaturan Lanjutan (default: mati saat baterai 100%). Konsumsi genset 1,33 L/jam (16 L / 12 jam). PV memakai kurva lonceng antara terbit–terbenam, total energi harian = Wp × PSH × efisiensi (sama dengan simulator harian).","The simulation uses nominal battery capacity (14-day degradation ignored). Night genset behaviour is chosen in Advanced Settings (default: stop at 100% battery). Genset consumption 1.33 L/h (16 L / 12 h). PV follows a bell curve between sunrise and sunset; daily energy = Wp × PSH × efficiency (same as the daily simulator).","模拟采用电池额定容量（忽略14天内的衰减）。夜间发电机运行方式在“高级设置”中选择（默认：电池100%时停机）。发电机耗油 1.33 升/小时（16 升 / 12 小时）。光伏按日出至日落的钟形曲线发电，每日电量 = Wp × PSH × 效率（与日模拟器相同）。","La simulación usa la capacidad nominal (se ignora la degradación en 14 días). El comportamiento nocturno del generador se elige en Ajustes avanzados (por defecto: se detiene al 100 % de batería). Consumo del generador 1,33 L/h (16 L / 12 h). La FV sigue una curva de campana entre amanecer y atardecer; energía diaria = Wp × PSH × eficiencia (igual que el simulador diario).","सिमुलेशन में बैटरी की नाममात्र क्षमता ली गई है (14 दिनों की गिरावट नज़रअंदाज़)। रात में जनरेटर का व्यवहार उन्नत सेटिंग्स में चुनें (डिफ़ॉल्ट: बैटरी 100% पर बंद)। जनरेटर खपत 1.33 L/घंटा (16 L / 12 घंटे)। PV सूर्योदय–सूर्यास्त के बीच घंटी-आकार वक्र का अनुसरण करता है; दैनिक ऊर्जा = Wp × PSH × दक्षता (दैनिक सिमुलेटर जैसी)।","تستخدم المحاكاة السعة الاسمية للبطارية (يُهمل التدهور خلال 14 يومًا). يُختار سلوك المولّد الليلي من الإعدادات المتقدمة (الافتراضي: يتوقف عند 100%). استهلاك المولّد 1.33 لتر/ساعة (16 لترًا / 12 ساعة). تتبع الطاقة الشمسية منحنى جرسيًا بين الشروق والغروب؛ الطاقة اليومية = Wp × PSH × الكفاءة (كما في المحاكي اليومي).","La simulation utilise la capacité nominale (dégradation sur 14 jours ignorée). Le comportement nocturne du groupe se choisit dans les Paramètres avancés (par défaut : arrêt à 100 % de batterie). Consommation du groupe 1,33 L/h (16 L / 12 h). Le PV suit une courbe en cloche entre lever et coucher du soleil ; énergie quotidienne = Wc × PSH × rendement (comme le simulateur journalier).","A simulação usa a capacidade nominal (degradação em 14 dias ignorada). O comportamento noturno do gerador é escolhido em Configurações avançadas (padrão: para em 100 % de bateria). Consumo do gerador 1,33 L/h (16 L / 12 h). O FV segue uma curva em sino entre nascer e pôr do sol; energia diária = Wp × PSH × eficiência (igual ao simulador diário).","В симуляции используется номинальная ёмкость (деградация за 14 дней не учитывается). Работа генератора ночью выбирается в расширенных настройках (по умолчанию: остановка при 100 %). Расход генератора 1,33 л/ч (16 л / 12 ч). ФЭ следует колоколообразной кривой между восходом и закатом; суточная энергия = Wp × PSH × КПД (как в суточном симуляторе).","シミュレーションはバッテリーの公称容量を使用します（14日間の劣化は無視）。夜間の発電機動作は詳細設定で選択します（デフォルト：バッテリー100%で停止）。発電機の燃料消費は1.33 L/h（16 L / 12時間）。太陽光は日の出〜日没の釣鐘状カーブで、日発電量 = Wp × PSH × 効率（日次シミュレーターと同じ）。"],
+th_shift:["Shift","Shift","班次","Turno","शिफ्ट","الوردية","Poste","Turno","Смена","シフト"],
+th_w:["Cuaca","Weather","天气","Clima","मौसम","الطقس","Météo","Clima","Погода","天候"],
+th_ps:["Precharge mulai","Precharge start","预充电开始","Inicio precarga","प्रीचार्ज शुरू","بدء الشحن المسبق","Début précharge","Início pré-carga","Начало предзаряда","プリチャージ開始"],
+th_pe:["Precharge selesai","Precharge end","预充电结束","Fin precarga","प्रीचार्ज समाप्त","نهاية الشحن المسبق","Fin précharge","Fim pré-carga","Конец предзаряда","プリチャージ終了"],
+th_pd:["Durasi pre (h)","Pre duration (h)","预充电时长 (h)","Duración pre (h)","प्रीचार्ज अवधि (h)","مدة الشحن المسبق (س)","Durée préch. (h)","Duração pré (h)","Длит. предзаряда (ч)","プリチャージ時間 (h)"],
+th_s0:["SOC mulai shift","SOC at shift start","班次开始 SOC","SOC al inicio","शिफ्ट शुरू SOC","SOC عند بدء الوردية","SOC début poste","SOC no início","SOC в начале смены","シフト開始SOC"],
+th_gs:["Genset auto-start","Genset auto-start","发电机自动启动","Arranque auto generador","जनरेटर ऑटो-स्टार्ट","التشغيل التلقائي للمولّد","Démarrage auto groupe","Partida auto gerador","Автозапуск генератора","発電機自動始動"],
+th_ns:["Jml start","Starts","启动次数","Arranques","स्टार्ट संख्या","عدد التشغيلات","Démarrages","Partidas","Пусков","始動回数"],
+th_gh:["Genset malam (h)","Night genset (h)","夜间发电机 (h)","Generador noche (h)","रात जनरेटर (h)","مولّد الليل (س)","Groupe nuit (h)","Gerador noite (h)","Генератор ночью (ч)","夜間発電機 (h)"],
+th_s1:["SOC akhir shift","SOC at shift end","班次结束 SOC","SOC al final","शिफ्ट अंत SOC","SOC عند نهاية الوردية","SOC fin poste","SOC no fim","SOC в конце смены","シフト終了SOC"],
+th_fu:["BBM (L)","Fuel (L)","燃油 (L)","Combustible (L)","ईंधन (L)","الوقود (لتر)","Carburant (L)","Combustível (L)","Топливо (л)","燃料 (L)"],
+bal_tag:["(balancing)","(balancing)","（均衡）","(balanceo)","(बैलेंसिंग)","(موازنة)","(équilibrage)","(balanceamento)","(балансировка)","(バランシング)"],
+pv_enough:["— (PV cukup)","— (PV sufficient)","—（光伏足够）","— (FV suficiente)","— (PV पर्याप्त)","— (PV كافٍ)","— (PV suffisant)","— (FV suficiente)","— (ФЭ достаточно)","—（太陽光で十分）"],
+not_needed:["tidak perlu","not needed","不需要","no necesario","आवश्यक नहीं","غير مطلوب","inutile","desnecessário","не нужен","不要"],
+spec:["PV {pv} Wp · Baterai {bat} Wh · Charger {ch} W","PV {pv} Wp · Battery {bat} Wh · Charger {ch} W","光伏 {pv} Wp · 电池 {bat} Wh · 充电器 {ch} W","FV {pv} Wp · Batería {bat} Wh · Cargador {ch} W","PV {pv} Wp · बैटरी {bat} Wh · चार्जर {ch} W","PV {pv} Wp · بطارية {bat} Wh · شاحن {ch} W","PV {pv} Wc · Batterie {bat} Wh · Chargeur {ch} W","FV {pv} Wp · Bateria {bat} Wh · Carregador {ch} W","ФЭ {pv} Wp · Батарея {bat} Wh · Зарядное {ch} W","PV {pv} Wp · バッテリー {bat} Wh · チャージャー {ch} W"],
+w_lamp:["Watt lampu ({lamp} W) melebihi daya charger ({ch} W): saat genset aktif baterai tetap terkuras.","Lamp load ({lamp} W) exceeds the charger power ({ch} W): the battery keeps draining even while the genset runs.","灯具功率（{lamp} W）超过充电器功率（{ch} W）：发电机运行时电池仍会放电。","La carga de lámparas ({lamp} W) supera la potencia del cargador ({ch} W): la batería se sigue descargando aunque el generador funcione.","लैम्प लोड ({lamp} W) चार्जर शक्ति ({ch} W) से अधिक है: जनरेटर चलने पर भी बैटरी घटती रहती है।","حمل المصابيح ({lamp} واط) يتجاوز قدرة الشاحن ({ch} واط): تستمر البطارية في التفريغ حتى أثناء عمل المولّد.","La charge des lampes ({lamp} W) dépasse la puissance du chargeur ({ch} W) : la batterie continue de se vider même groupe en marche.","A carga das lâmpadas ({lamp} W) excede a potência do carregador ({ch} W): a bateria continua descarregando mesmo com o gerador ligado.","Мощность ламп ({lamp} Вт) превышает мощность зарядного ({ch} Вт): батарея разряжается даже при работающем генераторе.","ランプ負荷（{lamp} W）がチャージャー出力（{ch} W）を超えています。発電機運転中もバッテリーは減り続けます。"],
+w_empty:["Baterai habis (0%) – lampu padam sebagian. Kekurangan ≈ {gap} Wh. Kecilkan beban atau tambah kapasitas.","Battery empty (0%): the lamp goes out partially. Shortfall ≈ {gap} Wh. Reduce the load or add capacity.","电池耗尽（0%）：灯具部分熄灭。缺口约 {gap} Wh。请降低负载或增加容量。","Batería agotada (0 %): la lámpara se apaga parcialmente. Déficit ≈ {gap} Wh. Reduzca la carga o aumente la capacidad.","बैटरी खाली (0%): लैम्प आंशिक रूप से बुझ जाता है। कमी ≈ {gap} Wh। लोड घटाएँ या क्षमता बढ़ाएँ।","البطارية فارغة (0%): ينطفئ المصباح جزئيًا. العجز ≈ {gap} Wh. قلّل الحمل أو زد السعة.","Batterie vide (0 %) : la lampe s'éteint en partie. Déficit ≈ {gap} Wh. Réduisez la charge ou augmentez la capacité.","Bateria esgotada (0 %): a lâmpada apaga parcialmente. Déficit ≈ {gap} Wh. Reduza a carga ou aumente a capacidade.","Батарея разряжена (0 %): лампа частично гаснет. Дефицит ≈ {gap} Wh. Уменьшите нагрузку или увеличьте ёмкость.","バッテリー切れ（0%）：ランプが一部消灯します。不足量 ≈ {gap} Wh。負荷を下げるか容量を増やしてください。"],
+w_all:["Info: genset menyala di malam hari pada SEMUA shift. PV + baterai belum cukup mandiri untuk beban/cuaca ini; lihat BBM per shift di ringkasan.","Info: the genset runs at night in ALL shifts. PV + battery are not yet self-sufficient for this load/weather; see fuel per shift in the summary.","提示：所有班次夜间发电机都会运行。在此负载/天气下，光伏+电池尚不能自给；请查看摘要中的每班次燃油。","Info: el generador funciona de noche en TODOS los turnos. FV + batería aún no son autosuficientes para esta carga/clima; vea el combustible por turno en el resumen.","सूचना: सभी शिफ्टों में रात को जनरेटर चलता है। इस लोड/मौसम के लिए PV + बैटरी अभी आत्मनिर्भर नहीं हैं; सारांश में प्रति शिफ्ट ईंधन देखें।","معلومة: يعمل المولّد ليلًا في جميع الورديات. الطاقة الشمسية + البطارية غير كافيتين ذاتيًا لهذا الحمل/الطقس؛ راجع الوقود لكل وردية في الملخص.","Info : le groupe fonctionne la nuit à TOUS les postes. PV + batterie ne sont pas encore autosuffisants pour cette charge/météo ; voir le carburant par poste dans le résumé.","Info: o gerador funciona à noite em TODOS os turnos. FV + bateria ainda não são autossuficientes para esta carga/clima; veja o combustível por turno no resumo.","Инфо: генератор работает ночью во ВСЕХ сменах. ФЭ + батарея пока не обеспечивают автономность при этой нагрузке/погоде; см. расход топлива на смену в сводке.","情報：すべてのシフトで夜間に発電機が稼働します。この負荷/天候では太陽光＋バッテリーだけでは自給できません。サマリーのシフトあたり燃料をご確認ください。"],
+w_sun:["Jam matahari terbit/terbenam tidak valid.","Sunrise/sunset hours are invalid.","日出/日落时间无效。","Las horas de amanecer/atardecer no son válidas.","सूर्योदय/सूर्यास्त का समय अमान्य है।","ساعتا الشروق/الغروب غير صالحتين.","Heures de lever/coucher du soleil invalides.","Horas de nascer/pôr do sol inválidas.","Некорректное время восхода/заката.","日の出/日没の時刻が不正です。"],
+w_cross:["Siang melewati batas hari operasional: ubah \"Hari operasional mulai jam\" agar sebelum matahari terbit.","Daylight crosses the operating-day boundary: set \"Operating day starts at\" before sunrise.","白天跨越了运营日边界：请将“运营日开始时间”设在日出之前。","La luz diurna cruza el límite del día operativo: fije \"El día operativo empieza a las\" antes del amanecer.","दिन का उजाला संचालन दिवस की सीमा पार करता है: \"संचालन दिवस शुरू\" को सूर्योदय से पहले रखें।","ضوء النهار يتجاوز حدّ اليوم التشغيلي: اجعل \"بداية اليوم التشغيلي\" قبل الشروق.","La lumière du jour franchit la limite du jour d'exploitation : réglez \"Début du jour d'exploitation\" avant le lever du soleil.","A luz do dia cruza o limite do dia operacional: defina \"Dia operacional começa às\" antes do nascer do sol.","Светлое время пересекает границу рабочих суток: задайте «Начало рабочих суток» до восхода.","日中が運用日の境界をまたいでいます。「運用日の開始」を日の出より前に設定してください。"],
+w_full:["Info: {n} shift tetap butuh genset malam walau sudah precharge, karena baterai tidak muat untuk satu shift penuh (kebutuhan lampu {need} Wh, energi baterai yang boleh dipakai {usable} Wh pada DOD {dod}%). Genset malam ikut mengisi baterai, jadi ini normal; untuk menguranginya perbesar baterai, kecilkan watt, atau naikkan DOD.","Info: {n} shift(s) still need the genset at night despite precharge, because the battery cannot hold a full shift (lamp need {need} Wh, usable battery energy {usable} Wh at DOD {dod}%). The night genset also charges the battery, so this is normal; to reduce it, enlarge the battery, lower the wattage, or raise DOD.","提示：有 {n} 个班次即使预充电后夜间仍需发电机，因为电池容纳不下一个完整班次（灯具需求 {need} Wh，DOD {dod}% 下可用电池能量 {usable} Wh）。夜间发电机同时会给电池充电，因此属正常现象；若要减少，请增大电池、降低功率或提高 DOD。","Info: {n} turno(s) aún necesitan el generador de noche pese a la precarga, porque la batería no cabe un turno completo (necesidad de lámparas {need} Wh, energía utilizable de la batería {usable} Wh con DOD {dod} %). El generador nocturno también carga la batería, por lo que es normal; para reducirlo, amplíe la batería, reduzca la potencia o aumente el DOD.","सूचना: {n} शिफ्ट में प्रीचार्ज के बावजूद रात में जनरेटर चलाना पड़ता है, क्योंकि बैटरी पूरी शिफ्ट नहीं संभाल सकती (लैम्प की आवश्यकता {need} Wh, DOD {dod}% पर उपयोगी बैटरी ऊर्जा {usable} Wh)। रात का जनरेटर बैटरी भी चार्ज करता है, इसलिए यह सामान्य है; घटाने के लिए बैटरी बड़ी करें, वॉट कम करें या DOD बढ़ाएँ।","معلومة: {n} وردية ما زالت تحتاج المولّد ليلًا رغم الشحن المسبق لأن البطارية لا تتسع لوردية كاملة (احتياج المصابيح {need} Wh، الطاقة القابلة للاستخدام {usable} Wh عند DOD {dod}%). المولّد الليلي يشحن البطارية أيضًا، لذا هذا طبيعي؛ ولتقليله كبّر البطارية أو قلّل القدرة أو ارفع DOD.","Info : {n} poste(s) ont encore besoin du groupe la nuit malgré la précharge, car la batterie ne peut pas contenir un poste complet (besoin des lampes {need} Wh, énergie utilisable {usable} Wh à DOD {dod} %). Le groupe de nuit recharge aussi la batterie, c'est donc normal ; pour le réduire, agrandissez la batterie, baissez la puissance ou augmentez le DOD.","Info: {n} turno(s) ainda precisam do gerador à noite apesar da pré-carga, porque a bateria não comporta um turno inteiro (necessidade das lâmpadas {need} Wh, energia utilizável {usable} Wh com DOD {dod} %). O gerador noturno também carrega a bateria, então é normal; para reduzir, aumente a bateria, diminua a potência ou aumente o DOD.","Инфо: в {n} смен(ах) ночью всё равно нужен генератор, несмотря на предзаряд, так как батарея не вмещает целую смену (потребность ламп {need} Wh, доступная энергия батареи {usable} Wh при DOD {dod} %). Ночной генератор также заряжает батарею, поэтому это нормально; чтобы уменьшить — увеличьте батарею, снизьте мощность или повысьте DOD.","情報：プリチャージしても {n} シフトで夜間に発電機が必要です。バッテリーが1シフト分を蓄えられないためです（ランプ需要 {need} Wh、DOD {dod}% での使用可能量 {usable} Wh）。夜間発電機はバッテリーも充電するため正常です。減らすにはバッテリーを大きくするか、電力を下げるか、DODを上げてください。"],
+w_pvu:["Info: hanya {pct}% energi PV yang tersimpan; sisanya tidak punya tempat karena baterai sudah penuh. Baterai lebih besar atau beban lebih besar akan memanfaatkan PV lebih banyak.","Info: only {pct}% of PV energy is stored; the rest has nowhere to go because the battery is already full. A larger battery or a larger load would use more PV.","提示：仅有 {pct}% 的光伏电量被存储，其余因电池已满而无处可用。更大的电池或更大的负载可以利用更多光伏。","Info: solo se almacena el {pct} % de la energía FV; el resto no tiene dónde ir porque la batería ya está llena. Una batería mayor o una carga mayor aprovecharían más FV.","सूचना: PV ऊर्जा का केवल {pct}% संग्रहीत होता है; बाकी के लिए जगह नहीं है क्योंकि बैटरी पहले से भरी है। बड़ी बैटरी या अधिक लोड से अधिक PV उपयोग होगा।","معلومة: يُخزَّن {pct}% فقط من طاقة PV؛ والباقي لا مكان له لأن البطارية ممتلئة. بطارية أكبر أو حمل أكبر سيستفيدان من PV أكثر.","Info : seulement {pct} % de l'énergie PV est stocké ; le reste ne trouve pas de place car la batterie est pleine. Une batterie plus grande ou une charge plus forte exploiterait mieux le PV.","Info: apenas {pct} % da energia FV é armazenada; o resto não tem para onde ir porque a bateria já está cheia. Uma bateria maior ou uma carga maior aproveitaria mais FV.","Инфо: сохраняется лишь {pct} % энергии ФЭ; остальное некуда девать, так как батарея уже полна. Батарея побольше или нагрузка побольше использовали бы ФЭ полнее.","情報：太陽光エネルギーの {pct}% しか蓄えられていません。残りはバッテリーが満充電のため行き場がありません。バッテリーを大きくするか負荷を増やすと、より多く活用できます。"],
+w_ok:["✔ Tidak ada peringatan untuk skenario ini.","✔ No warnings for this scenario.","✔ 此场景无警告。","✔ Sin advertencias para este escenario.","✔ इस परिदृश्य के लिए कोई चेतावनी नहीं।","✔ لا توجد تحذيرات لهذا السيناريو.","✔ Aucun avertissement pour ce scénario.","✔ Sem avisos para este cenário.","✔ Для этого сценария предупреждений нет.","✔ このシナリオに警告はありません。"],
+k_fuel:["Total BBM","Total fuel","总燃油","Combustible total","कुल ईंधन","إجمالي الوقود","Carburant total","Combustível total","Всего топлива","燃料合計"],
+k_fuel_s:["genset total","genset total","发电机合计","total generador","जनरेटर कुल","إجمالي المولّد","total groupe","total gerador","всего генератор","発電機合計"],
+k_gh:["Jam genset","Genset hours","发电机小时","Horas de generador","जनरेटर घंटे","ساعات المولّد","Heures groupe","Horas do gerador","Часы генератора","発電機時間"],
+k_gh_s:["malam {n} · siang {d}","night {n} · day {d}","夜间 {n} · 白天 {d}","noche {n} · día {d}","रात {n} · दिन {d}","ليل {n} · نهار {d}","nuit {n} · jour {d}","noite {n} · dia {d}","ночь {n} · день {d}","夜 {n} · 昼 {d}"],
+k_pre:["Hari precharge","Precharge days","预充电天数","Días con precarga","प्रीचार्ज वाले दिन","أيام الشحن المسبق","Jours de précharge","Dias com pré-carga","Дни предзаряда","プリチャージ日数"],
+k_pre_s:["genset siang jam {h}+","daytime genset from {h}","白天发电机从 {h} 起","generador diurno desde {h}","दिन में जनरेटर {h} से","المولّد نهارًا من {h}","groupe de jour dès {h}","gerador diurno a partir de {h}","дневной генератор с {h}","日中発電機 {h} 以降"],
+k_night:["Hari genset malam","Night genset days","夜间发电机天数","Días con generador nocturno","रात जनरेटर वाले दिन","أيام المولّد الليلي","Jours de groupe nocturne","Dias com gerador noturno","Дни ночного генератора","夜間発電機の日数"],
+k_night_s:["auto-start rata-rata {t}","average auto-start {t}","平均自动启动 {t}","arranque auto medio {t}","औसत ऑटो-स्टार्ट {t}","متوسط التشغيل التلقائي {t}","démarrage auto moyen {t}","partida auto média {t}","средний автозапуск {t}","平均自動始動 {t}"],
+k_min:["SOC minimum","Minimum SOC","最低 SOC","SOC mínimo","न्यूनतम SOC","أدنى SOC","SOC minimum","SOC mínimo","Минимальный SOC","最小SOC"],
+k_min_s:["batas DOD {p}%","DOD limit {p}%","DOD 下限 {p}%","límite DOD {p} %","DOD सीमा {p}%","حد DOD {p}%","limite DOD {p} %","limite DOD {p} %","порог DOD {p} %","DOD下限 {p}%"],
+k_pv:["PV terpakai","PV used","光伏利用率","FV aprovechada","PV उपयोग","PV المستخدم","PV utilisé","FV aproveitada","Использовано ФЭ","太陽光利用率"],
+k_pv_s:["tidak tertampung {w} kWh/hari","not stored {w} kWh/day","未存储 {w} kWh/天","no almacenado {w} kWh/día","संग्रहीत नहीं {w} kWh/दिन","غير مخزَّن {w} kWh/يوم","non stocké {w} kWh/jour","não armazenado {w} kWh/dia","не сохранено {w} кВт·ч/день","未蓄電 {w} kWh/日"],
+k_pv_d2:[" (hari ke-2 dst.)"," (day 2 onward)","（第2天起）"," (desde el día 2)"," (दिन 2 से)"," (من اليوم 2)"," (dès le jour 2)"," (a partir do dia 2)"," (со 2-го дня)","（2日目以降）"],
+k_st:["Total start genset malam","Night genset starts","夜间发电机启动次数","Arranques nocturnos del generador","रात में जनरेटर स्टार्ट","مرات تشغيل المولّد ليلًا","Démarrages nocturnes du groupe","Partidas noturnas do gerador","Ночных пусков генератора","夜間発電機の始動回数"],
+k_st_s:["jumlah auto-start","number of auto-starts","自动启动次数","número de arranques automáticos","ऑटो-स्टार्ट की संख्या","عدد التشغيلات التلقائية","nombre de démarrages auto","número de partidas automáticas","число автозапусков","自動始動の回数"],
+k_fps:["BBM per shift","Fuel per shift","每班次燃油","Combustible por turno","प्रति शिफ्ट ईंधन","الوقود لكل وردية","Carburant par poste","Combustível por turno","Топливо на смену","シフトあたり燃料"],
+k_fps_s:["rata-rata","average","平均","promedio","औसत","المتوسط","moyenne","média","в среднем","平均"],
+g_lb:["lampu ← baterai","lamp ← battery","灯 ← 电池","lámpara ← batería","लैम्प ← बैटरी","مصباح ← بطارية","lampe ← batterie","lâmpada ← bateria","лампа ← батарея","ランプ ← 電池"],
+g_lg:["lampu ← genset","lamp ← genset","灯 ← 发电机","lámpara ← generador","लैम्प ← जनरेटर","مصباح ← مولّد","lampe ← groupe","lâmpada ← gerador","лампа ← генератор","ランプ ← 発電機"]
+};
+let CUR='id';
+function t(k,v){const i=LANGS.indexOf(CUR);let s=(T[k]&&(T[k][i]||T[k][1]||T[k][0]))||k;if(v)for(const x in v)s=s.split('{'+x+'}').join(v[x]);return s;}
+
+const SPECS={"GD9-M":{pv:1785,bat:10240,ch:3600,lamp:800},"GDQ9-M":{pv:3570,bat:32153,ch:3600,lamp:1200},"GD7-H":{pv:1785,bat:16076,ch:3600,lamp:600},"GD9-H":{pv:2130,bat:16076,ch:3600,lamp:800},"GD12-H":{pv:2975,bat:32153,ch:3600,lamp:1200}};
+const PSH={1:1.5,2:3.0,3:4.5};
+const FUEL_LPH=16/12;
+const DT=1/12; // 5 menit
+const $=id=>document.getElementById(id);
+const fmtT=h=>{h=((h%24)+24)%24;let m=Math.round(h*60);let hh=Math.floor(m/60)%24,mm=m%60;return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')};
+let LAST=null;
+
+(function init(){
+  const d=$('days');for(let i=1;i<=14;i++){const o=document.createElement('option');o.value=i;o.dataset.n=i;o.dataset.i18n='n_days';if(i===7)o.selected=true;d.appendChild(o)}
+  const b=$('perDayBox');for(let i=1;i<=14;i++){b.insertAdjacentHTML('beforeend',`<div><label data-i18n="l_day" data-n="${i}"></label><select class="pdw"><option value="" data-i18n="opt_default"></option><option value="1" data-i18n="ws1"></option><option value="2" data-i18n="ws2"></option><option value="3" data-i18n="ws3"></option></select></div>`)}
+  const ls=$('lang');LANGS.forEach((c,i)=>{const o=document.createElement('option');o.value=c;o.textContent=LANG_NAMES[i];ls.appendChild(o)});
+  let saved=null;try{saved=localStorage.getItem('gida_lang')}catch(e){}
+  CUR=LANGS.indexOf(saved)>=0?saved:'id';ls.value=CUR;
+  onModel();updDod();applyStatic();
+})();
+function applyStatic(){
+  document.documentElement.lang=CUR;document.documentElement.dir=(CUR==='ar')?'rtl':'ltr';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');el.textContent=t(k,el.dataset.n?{n:el.dataset.n}:null);});
+  onModel(true);
+}
+
+function doPrint(){var d=document.getElementById('pdate');if(d)d.textContent=new Date().toLocaleString()+' · '+(document.getElementById('model')||{}).value+' · '+(document.getElementById('lamp')||{value:''}).value+' W';window.print();}
+function setLang(c){CUR=c;try{localStorage.setItem('gida_lang',c)}catch(e){}applyStatic();if(LAST)render(LAST.p,LAST.r);}
+function onModel(keep){const s=SPECS[$('model').value];if(!keep)$('lamp').value=s.lamp;$('specInfo').textContent=t('spec',{pv:s.pv,bat:s.bat.toLocaleString(),ch:s.ch});}
+function updDod(){const v=+$('dod').value;$('dodTxt').textContent=v;$('trigTxt').textContent=100-v;}
+
+/* ================= CORE ================= */
+function runSim(p){
+  const spec=SPECS[p.model],bat=spec.bat,lamp=p.lamp,ch=spec.ch;
+  const chEff=p.chEff/100,pvEff=p.pvEff/100;
+  const trigWh=bat*(100-p.dod)/100;
+  const N=p.days;
+  const off=p.off||0;
+  const sh_=h=>(((h-off)%24)+24)%24;   // jam jam-dinding -> jam relatif awal hari operasional
+  let sStart=sh_(p.sStart),sStop=sh_(p.sStop);
+  const shiftHrs=((sStop-sStart)+24)%24||24;
+  const lastEnd=24*(N-1)+sStart+shiftHrs;
+  const crossing=lastEnd>24*N+1e-9;
+  const totalRows=crossing?N+1:N;
+  const steps=Math.round(24/DT)*totalRows;
+  const spd=Math.round(24/DT);
+  // PV dihitung pada jam dinding (bukan jam relatif), supaya siang tidak terpotong/terkompres bila hari operasional mulai setelah matahari terbit
+  const sr=p.sunrise;let ss=p.sunset;if(ss<=sr)ss=24;const span=Math.max(0.1,ss-sr);
+  const dayGain=d=>spec.pv*PSH[p.weatherDay[d]||p.weather]*pvEff;
+  const pvW=(T)=>{if(T>=24*totalRows)return 0;const Tc=T+off,c=Math.floor(Tc/24),h=Tc-24*c;if(h<sr||h>=ss)return 0;
+    return dayGain(c)*(Math.PI/2)/span*Math.sin(Math.PI*(h-sr)/span);};
+  // shift windows
+  const shifts=[];
+  for(let k=0;k<N;k++){
+    const st=24*k+sStart,en=st+shiftHrs;
+    const preH_=sh_(p.preHour);let pre=preH_<sStart?24*k+preH_:24*(k-1)+preH_;
+    const bal=p.bal>0&&((k+1)%p.bal===0);
+    const target=bal?bat:Math.min(bat,trigWh+lamp*shiftHrs);
+    shifts.push({k,st,en,pre:Math.max(0,pre),target,bal,preStartT:null,preEndT:null,preH:0,genStartT:null,genStarts:[],genH:0,socStart:null,socEnd:null,socMin:Infinity,fuelPre:0,fuelNight:0,latched:false});
+  }
+  const stopLvl=p.gMode==='cont'?Infinity:(p.gMode==='full'?bat:Math.max(trigWh+1,Math.min(bat,bat*p.gPct/100)));
+  let soc=bat*p.soc0/100;
+  const A={soc:new Float32Array(steps),mode:new Uint8Array(steps),pv:new Float32Array(steps)};
+  // mode: 0 idle,1 lamp-bat,2 lamp-gen,3 precharge
+  const wastedDay=new Float64Array(totalRows);let wasted=0,pvUsed=0,total={fuel:0,genH:0,preH:0};
+  let lampGapWh=0;
+  const projPV=(T0,socNow,Tend)=>{let s=socNow;for(let T=T0;T<Tend;T+=DT){s=Math.min(bat,s+pvW(T)*DT);}return s;};
+  for(let i=0;i<steps;i++){
+    const T=i*DT;
+    let sh=null,shiftActive=false;
+    for(const x of shifts){if(T>=x.st-1e-9&&T<x.en-1e-9){sh=x;shiftActive=true;break}}
+    const pv=pvW(T);let mode=0;
+    if(shiftActive){
+      if(sh.socStart===null)sh.socStart=soc;
+      if(!sh.latched&&soc<=trigWh+1e-6){sh.latched=true;if(sh.genStartT===null)sh.genStartT=T;sh.genStarts.push(T);}
+      if(sh.latched){
+        mode=2;sh.genH+=DT;sh.fuelNight+=FUEL_LPH*DT;total.fuel+=FUEL_LPH*DT;total.genH+=DT;
+        const net=ch-lamp; // efisiensi charger hanya berlaku saat mengisi; bila lampu > charger, defisit diambil penuh dari baterai
+        soc+=(net>0?net*chEff:net)*DT+pv*DT;
+        if(soc>=stopLvl-1e-6){ if(soc>stopLvl)soc=stopLvl; sh.latched=false; }
+      }else{
+        mode=1;soc+=pv*DT-lamp*DT;
+      }
+      if(soc>bat){wasted+=soc-bat;wastedDay[Math.min(totalRows-1,Math.floor(T/24))]+=soc-bat;soc=bat}
+      if(soc<0){lampGapWh+=-soc;soc=0}
+      sh.socMin=Math.min(sh.socMin,soc);
+    }else{
+      // precharge?
+      let pc=null;
+      for(const x of shifts){if(T>=x.pre-1e-9&&T<x.st-1e-9){pc=x;break}}
+      let on=false;
+      if(pc&&soc<bat-1e-6){
+        const proj=projPV(T,soc,pc.st);
+        if(proj<pc.target-1e-6)on=true;
+      }
+      if(on){
+        mode=3;pc.preH+=DT;if(pc.preStartT===null)pc.preStartT=T;pc.preEndT=T+DT;
+        pc.fuelPre+=FUEL_LPH*DT;total.fuel+=FUEL_LPH*DT;total.preH+=DT;
+        soc+=ch*chEff*DT+pv*DT;
+      }else soc+=pv*DT;
+      if(soc>bat){wasted+=soc-bat;wastedDay[Math.min(totalRows-1,Math.floor(T/24))]+=soc-bat;soc=bat}
+    }
+    // sh end bookkeeping
+    for(const x of shifts){if(x.socEnd===null&&T+DT>=x.en-1e-9&&T<x.en)x.socEnd=soc;}
+    A.soc[i]=soc;A.mode[i]=mode;A.pv[i]=pv;
+  }
+  for(const x of shifts){if(x.socEnd===null)x.socEnd=soc; if(x.socMin===Infinity)x.socMin=x.socStart||0;}
+  // soc at shift start
+  return {A,shifts,total,wasted,wastedDay,bat,trigWh,lampGapWh,totalRows,spd,shiftHrs,crossing,N,lamp,spec,dayGain,off};
+}
+
+/* ================= UI ================= */
+function getParams(){
+  const wd=[...document.querySelectorAll('.pdw')].map(e=>e.value?+e.value:0);
+  return {model:$('model').value,lamp:+$('lamp').value||800,weather:+$('weather').value,weatherDay:wd,
+    sStart:+$('sStart').value,sStop:+$('sStop').value,dod:+$('dod').value,days:+$('days').value,
+    off:Math.max(0,Math.min(12,+$('dayStart').value||0)),preHour:+$('preHour').value,soc0:Math.max(0,Math.min(100,+$('soc0').value)),sunrise:+$('sunrise').value,sunset:+$('sunset').value,
+    pvEff:+$('pvEff').value||80,chEff:+$('chEff').value||90,bal:+$('bal').value,gMode:$('gMode').value,gPct:+$('gPct').value||90};
+}
+function run(){const p=getParams();const r=runSim(p);LAST={p,r};render(p,r);}
+function segs(arr,spd,row,fn){
+  const out=[];let cur=null;
+  for(let j=0;j<spd;j++){const idx=row*spd+j;const k=fn(idx);
+    if(cur&&cur.k===k)cur.e=j+1;else{if(cur)out.push(cur);cur={k,s:j,e:j+1}}}
+  if(cur)out.push(cur);return out;
+}
+function render(p,r){
+  const {A,shifts,spd,totalRows,bat,trigWh}=r;
+  const W=[];
+  const minSoc=Math.min(...shifts.map(s=>s.socMin));
+  if(p.lamp>r.spec.ch)W.push(t('w_lamp',{lamp:p.lamp,ch:r.spec.ch}));
+  if(r.lampGapWh>1)W.push(t('w_empty',{gap:Math.round(r.lampGapWh)}));
+  const gdays=shifts.filter(s=>s.genH>0).length;
+  if(gdays===shifts.length&&shifts.length>0)W.push(t('w_all'));
+  if(p.sunset-p.sunrise<=0)W.push(t('w_sun'));
+  if(((p.sunrise-p.off)%24+24)%24>((p.sunset-p.off)%24+24)%24 && p.sunset-p.sunrise>0)W.push(t('w_cross'));
+  const lateSh=shifts.filter(s=>s.preStartT!==null&&s.genH>0).length;
+  if(lateSh>0){
+    const need=p.lamp*r.shiftHrs,usable=bat-trigWh;
+    if(need>usable)W.push(t('w_full',{n:lateSh,need:Math.round(need),usable:Math.round(usable),dod:p.dod}));
+  }
+  const d0=r.N>1?1:0;let pvTot=0,wTot=0;
+  for(let row=d0;row<totalRows;row++){let sum=0;for(let j=0;j<spd;j++)sum+=A.pv[row*spd+j];pvTot+=sum/12;wTot+=r.wastedDay[row];}
+  const pvUtil=pvTot>0?Math.max(0,1-wTot/pvTot):1;
+  if(pvUtil<0.5&&shifts.length)W.push(t('w_pvu',{pct:(pvUtil*100).toFixed(0)}));
+  $('warns').innerHTML=W.length?W.map(w=>`<div class="warn">⚠ ${w}</div>`).join(''):`<div class="warn ok">${t('w_ok')}</div>`;
+  const nShift=shifts.length;
+  const prechargeDays=shifts.filter(s=>s.preH>0).length;
+  const genStarts=shifts.filter(s=>s.genStartT!==null).map(s=>s.genStartT%24);
+  const avgGen=genStarts.length?fmtT(genStarts.reduce((a,b)=>a+b,0)/genStarts.length+p.off):'—';
+  const k=[
+    [t('k_fuel'),r.total.fuel.toFixed(1)+' L',t('k_fuel_s')],
+    [t('k_gh'),(r.total.genH+r.total.preH).toFixed(1)+' h',t('k_gh_s',{n:r.total.genH.toFixed(1),d:r.total.preH.toFixed(1)})],
+    [t('k_pre'),prechargeDays+'/'+nShift,t('k_pre_s',{h:fmtT(p.preHour)})],
+    [t('k_night'),gdays+'/'+nShift,t('k_night_s',{t:avgGen})],
+    [t('k_min'),(minSoc/bat*100).toFixed(0)+'%',t('k_min_s',{p:100-p.dod})],
+    [t('k_pv'),(pvUtil*100).toFixed(0)+'%',t('k_pv_s',{w:(wTot/1000/Math.max(1,totalRows-d0)).toFixed(1)})+(d0?t('k_pv_d2'):'')],
+    [t('k_st'),shifts.reduce((a,x)=>a+x.genStarts.length,0)+'x',t('k_st_s')],
+    [t('k_fps'),(nShift?r.total.fuel/nShift:0).toFixed(1)+' L',t('k_fps_s')]
+  ];
+  $('kpis').innerHTML=k.map(x=>`<div class="kpi"><span>${x[0]}</span><b>${x[1]}</b><span>${x[2]}</span></div>`).join('');
+  $('rngTxt').textContent=fmtT(p.off)+' → '+fmtT(p.off);
+  let tk='';for(let h=0;h<=24;h+=3)tk+=`<span style="left:${h/24*100}%">${String((h+p.off)%24).padStart(2,'0')}</span>`;$('ticks').innerHTML=tk;
+  const maxPv=Math.max(1,...A.pv);
+  let g='';
+  for(let row=0;row<totalRows;row++){
+    const wk=(p.weatherDay[row]||p.weather);
+    let html=`<div class="grow"><div class="dl">D${row+1}<div style="font-size:9px;color:var(--mut);font-weight:400">${t('ws'+wk)}</div></div><div class="track">`;
+    for(const s of segs(A.mode,spd,row,i=>A.mode[i])){
+      if(s.k===0)continue;
+      const left=s.s/spd*100,w=(s.e-s.s)/spd*100;
+      if(s.k===2){html+=`<div class="seg t-gen" style="left:${left}%;width:${w}%;background:var(--gen)"></div>`}
+      if(s.k===3){html+=`<div class="seg t-gen" style="left:${left}%;width:${w}%;background:var(--pre)"></div>`}
+      if(s.k===1||s.k===2)html+=`<div class="seg t-lamp" style="left:${left}%;width:${w}%;background:${s.k===1?'var(--blue)':'var(--gen)'}">${w>9?(s.k===1?t('g_lb'):t('g_lg')):''}</div>`;
+    }
+    for(let h=0;h<24;h++){let sum=0;for(let j=0;j<12;j++)sum+=A.pv[row*spd+h*12+j];const avg=sum/12;if(avg>1){html+=`<div class="seg t-pv" style="left:${h/24*100}%;width:${100/24}%;background:var(--pv);opacity:${(0.25+0.75*avg/maxPv).toFixed(2)}"></div>`}}
+    for(const s of shifts){
+      const ps=s.preStartT;
+      if(ps!==null&&Math.floor(ps/24)===row){const lf=(ps-24*row)/24*100;html+=`<div class="mk pre" style="left:${lf}%;top:-1px;${lf>88?'transform:translateX(-100%)':''}">⚡${fmtT(ps+p.off)}</div>`;}
+      for(const gt of s.genStarts){if(Math.floor(gt/24)===row){const lf=(gt-24*row)/24*100;html+=`<div class="mk" style="left:${lf}%;top:11px;${lf>88?'transform:translateX(-100%)':''}">⚡${fmtT(gt+p.off)}</div>`;}}
+    }
+    html+='</div></div>';g+=html;
+  }
+  $('gantt').innerHTML=g;
+  let hd='<div class="c"></div>';for(let h=0;h<24;h++)hd+=`<div class="c">${(h+p.off)%24}</div>`;$('stripHdr').innerHTML=hd;
+  let st='';
+  for(let row=0;row<totalRows;row++){
+    let h='<div class="strip"><div class="dl">D'+(row+1)+'</div>';
+    for(let hr=0;hr<24;hr++){let s=0;for(let j=0;j<12;j++)s+=A.soc[row*spd+hr*12+j];s/=12;const pc=s/bat*100;
+      let col;const trigPc=trigWh/bat*100;
+      if(s<=trigWh+bat*0.005)col='#ef4444';else if(pc<trigPc+15)col='#f59e0b';else if(pc<97)col='#22c55e';else col='#16a34a';
+      h+=`<div class="c" style="background:${col}" title="D${row+1} ${String((hr+p.off)%24).padStart(2,'0')}:00 – SOC ${pc.toFixed(0)}% (${Math.round(s)} Wh)">${pc.toFixed(0)}</div>`;}
+    st+=h+'</div>';
+  }
+  $('strips').innerHTML=st;
+  const Wd=900,Ht=170,pl=36,pr=8,pt=8,pb=18;const n=A.soc.length;
+  const X=i=>pl+(i/(n-1))*(Wd-pl-pr),Y=v=>pt+(1-v/bat)*(Ht-pt-pb);
+  let d='';for(let i=0;i<n;i+=3)d+=(i?'L':'M')+X(i).toFixed(1)+' '+Y(A.soc[i]).toFixed(1);
+  let grid='';for(let q=0;q<=4;q++){const v=q*25;grid+=`<line x1="${pl}" x2="${Wd-pr}" y1="${Y(bat*v/100)}" y2="${Y(bat*v/100)}" stroke="#2b3b4d"/><text x="2" y="${Y(bat*v/100)+3}">${v}%</text>`}
+  let dayl='';for(let dd=0;dd<totalRows;dd++){const x=X(dd*spd);dayl+=`<line x1="${x}" x2="${x}" y1="${pt}" y2="${Ht-pb}" stroke="#2b3b4d" stroke-dasharray="2 3"/><text x="${x+2}" y="${Ht-4}">D${dd+1}</text>`}
+  $('curve').innerHTML=`<div class="legend"><span>${t('curve_lg')}</span></div><svg viewBox="0 0 ${Wd} ${Ht}" width="100%" style="display:block">${grid}${dayl}<line x1="${pl}" x2="${Wd-pr}" y1="${Y(trigWh)}" y2="${Y(trigWh)}" stroke="#ef4444" stroke-dasharray="5 4"/><path d="${d}" fill="none" stroke="#38bdf8" stroke-width="1.6"/></svg>`;
+  let tb='<tr>'+['th_shift','th_w','th_ps','th_pe','th_pd','th_s0','th_gs','th_ns','th_gh','th_s1','th_fu'].map(k=>`<th>${t(k)}</th>`).join('')+'</tr>';
+  for(const s of shifts){
+    const wk=(p.weatherDay[s.k]||p.weather);
+    tb+=`<tr><td>S${s.k+1}${s.bal?' '+t('bal_tag'):''}</td><td>${t('ws'+wk)}</td><td>${s.preStartT!==null?'D'+(Math.floor(s.preStartT/24)+1)+' '+fmtT(s.preStartT+p.off):t('pv_enough')}</td><td>${s.preEndT!==null?fmtT(s.preEndT+p.off):'—'}</td><td>${s.preH.toFixed(1)}</td><td>${(s.socStart/r.bat*100).toFixed(0)}%</td><td>${s.genStartT!==null?'D'+(Math.floor(s.genStartT/24)+1)+' '+fmtT(s.genStartT+p.off):t('not_needed')}</td><td>${s.genStarts.length}</td><td>${s.genH.toFixed(1)}</td><td>${(s.socEnd/r.bat*100).toFixed(0)}%</td><td>${(s.fuelPre+s.fuelNight).toFixed(1)}</td></tr>`;
+  }
+  $('tbl').innerHTML=tb;
+}
+run();
+</script>
+</body>
+</html>
